@@ -1,57 +1,48 @@
-import requests
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 import pandas as pd
+import time
 from datetime import datetime
 
-def parse_downdetector_info(service_name, threshold=100):
+def parse_downdetector_selenium(service_name: str) -> pd.DataFrame:
     url = f"https://downdetector.info/{service_name}"
-    headers = {"User-Agent": "Mozilla/5.0"}
 
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
 
-    table = soup.find("table", class_="table")
-    if table is None:
-        print(f"[Ошибка] Таблица не найдена на странице {url}")
-        return None
+    service = Service("chromedriver")  # путь к chromedriver
+    driver = webdriver.Chrome(service=service, options=options)
 
-    data = []
-    for row in table.find("tbody").find_all("tr"):
-        cols = row.find_all("td")
-        if len(cols) < 2:
-            continue
-        try:
-            dt = datetime.strptime(cols[0].text.strip(), "%d.%m.%Y %H:%M")
-            count = int(cols[1].text.strip())
-        except:
-            continue
-        data.append({
-            "datetime": dt,
-            "num_reports": count,
-            "incident_occurred": count > threshold,
-            "service_name": service_name
-        })
+    try:
+        driver.get(url)
+        time.sleep(5)  # дождаться загрузки
 
-    return pd.DataFrame(data)
+        table = driver.find_element(By.XPATH, "//table")
+        rows = table.find_elements(By.TAG_NAME, "tr")
 
+        data = []
+        for row in rows[1:]:
+            cols = row.find_elements(By.TAG_NAME, "td")
+            if len(cols) >= 2:
+                hour = cols[0].text.strip()
+                count = cols[1].text.strip()
+                data.append((hour, int(count)))
 
-def main():
-    with open("services.txt", "r") as f:
-        services = [line.strip() for line in f if line.strip()]
+        df = pd.DataFrame(data, columns=["time", "num_reports"])
+        df["datetime"] = pd.to_datetime(datetime.now().date().strftime("%Y-%m-%d") + " " + df["time"])
+        df["service_name"] = service_name
+        df["incident_occurred"] = df["num_reports"] > 100
+        df["scrape_time"] = datetime.now()
 
-    all_dfs = []
-    for service in services:
-        df = parse_downdetector_info(service)
-        if df is not None:
-            all_dfs.append(df)
+        return df
 
-    if all_dfs:
-        result = pd.concat(all_dfs)
-        today = datetime.now().strftime("%Y-%m-%d")
-        result.to_csv(f"data/downdetector_{today}.csv", index=False)
-        print(f"[✓] Данные успешно сохранены: data/downdetector_{today}.csv")
-    else:
-        print("Нет данных для сохранения.")
+    except Exception as e:
+        print(f"[Ошибка] Не удалось обработать {service_name}: {e}")
+        return pd.DataFrame()
 
-if __name__ == "__main__":
-    main()
+    finally:
+        driver.quit()
