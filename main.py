@@ -46,3 +46,18 @@ def parse_downdetector_selenium(service_name: str) -> pd.DataFrame:
 
     finally:
         driver.quit()
+services = ["sberbank"]
+all_data = []
+
+for s in services:
+    df = parse_downdetector_selenium(s)
+    if not df.empty:
+        all_data.append(df)
+
+if all_data:
+    final_df = pd.concat(all_data)
+    os.makedirs("parsed_data", exist_ok=True)
+    final_df.to_csv(f"parsed_data/downdetector_{datetime.now().date()}.csv", index=False)
+    print("✅ Данные успешно сохранены.")
+else:
+    print("❌ Нет данных для сохранения.")
