@@ -1,53 +1,49 @@
 import requests
 import pandas as pd
-from bs4 import BeautifulSoup
-from datetime import datetime
 import re
+from datetime import datetime
 
-def parse_downdetector_service(service_rus_name: str) -> pd.DataFrame | None:
-    # Пример: 'Сбербанк' → https://downdetector.info/data.js?service=Сбербанк
+def parse_from_data_js(service_rus_name: str) -> pd.DataFrame | None:
     url = f"https://downdetector.info/data.js?service={service_rus_name}"
-
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        print(f"[Ошибка] Не удалось получить данные: {url}")
-        return None
-
-    text = response.text
+    headers = {"User-Agent": "Mozilla/5.0"}
 
     try:
-        # Ищем строки с JS-массивами
-        hours_match = re.search(r"var hourlabels = (\[.*?\]);", text)
-        values_match = re.search(r"var datavalues = (\[.*?\]);", text)
+        r = requests.get(url, headers=headers)
+        r.encoding = 'utf-8'  # Учитываем кириллицу
 
-        if not hours_match or not values_match:
-            print("[Ошибка] Не удалось найти данные внутри скрипта")
+        if r.status_code != 200:
+            print(f"[Ошибка] Код ответа: {r.status_code}")
             return None
 
-        hours = eval(hours_match.group(1))
-        values = eval(values_match.group(1))
+        text = r.text
 
-        now = datetime.now().strftime("%Y-%m-%d")
+        # Находим массивы в тексте JavaScript
+        hour_match = re.search(r"var hourlabels = (\[.*?\]);", text)
+        data_match = re.search(r"var datavalues = (\[.*?\]);", text)
 
+        if not hour_match or not data_match:
+            print("[Ошибка] Структура JS изменилась — данные не найдены.")
+            return None
+
+        hours = eval(hour_match.group(1))
+        values = eval(data_match.group(1))
+
+        today = datetime.now().strftime("%Y-%m-%d")
         df = pd.DataFrame({
-            "datetime": [f"{now} {h}:00" for h in hours],
+            "datetime": [f"{today} {h}:00" for h in hours],
             "num_reports": values,
-            "service": service_rus_name,
-            "scrape_time": now
+            "service": service_rus_name
         })
 
         return df
 
     except Exception as e:
-        print(f"[Ошибка парсинга]: {e}")
+        print(f"[Исключение] {e}")
         return None
 
 # Пример использования
-df = parse_downdetector_service("Сбербанк")
+df = parse_from_data_js("Сбербанк")
 if df is not None:
     print(df.head())
-    df.to_csv("sberbank_reports.csv", index=False)
+else:
+    print("Не удалось получить данные.")
