@@ -1,63 +1,53 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
+import requests
 import pandas as pd
-import time
+from bs4 import BeautifulSoup
 from datetime import datetime
+import re
 
-def parse_downdetector_selenium(service_name: str) -> pd.DataFrame:
-    url = f"https://downdetector.info/{service_name}"
+def parse_downdetector_service(service_rus_name: str) -> pd.DataFrame | None:
+    # Пример: 'Сбербанк' → https://downdetector.info/data.js?service=Сбербанк
+    url = f"https://downdetector.info/data.js?service={service_rus_name}"
 
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
 
-    service = Service("chromedriver")  # путь к chromedriver
-    driver = webdriver.Chrome(service=service, options=options)
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        print(f"[Ошибка] Не удалось получить данные: {url}")
+        return None
+
+    text = response.text
 
     try:
-        driver.get(url)
-        time.sleep(5)  # дождаться загрузки
+        # Ищем строки с JS-массивами
+        hours_match = re.search(r"var hourlabels = (\[.*?\]);", text)
+        values_match = re.search(r"var datavalues = (\[.*?\]);", text)
 
-        table = driver.find_element(By.XPATH, "//table")
-        rows = table.find_elements(By.TAG_NAME, "tr")
+        if not hours_match or not values_match:
+            print("[Ошибка] Не удалось найти данные внутри скрипта")
+            return None
 
-        data = []
-        for row in rows[1:]:
-            cols = row.find_elements(By.TAG_NAME, "td")
-            if len(cols) >= 2:
-                hour = cols[0].text.strip()
-                count = cols[1].text.strip()
-                data.append((hour, int(count)))
+        hours = eval(hours_match.group(1))
+        values = eval(values_match.group(1))
 
-        df = pd.DataFrame(data, columns=["time", "num_reports"])
-        df["datetime"] = pd.to_datetime(datetime.now().date().strftime("%Y-%m-%d") + " " + df["time"])
-        df["service_name"] = service_name
-        df["incident_occurred"] = df["num_reports"] > 100
-        df["scrape_time"] = datetime.now()
+        now = datetime.now().strftime("%Y-%m-%d")
+
+        df = pd.DataFrame({
+            "datetime": [f"{now} {h}:00" for h in hours],
+            "num_reports": values,
+            "service": service_rus_name,
+            "scrape_time": now
+        })
 
         return df
 
     except Exception as e:
-        print(f"[Ошибка] Не удалось обработать {service_name}: {e}")
-        return pd.DataFrame()
+        print(f"[Ошибка парсинга]: {e}")
+        return None
 
-    finally:
-        driver.quit()
-services = ["sberbank"]
-all_data = []
-
-for s in services:
-    df = parse_downdetector_selenium(s)
-    if not df.empty:
-        all_data.append(df)
-
-if all_data:
-    final_df = pd.concat(all_data)
-    os.makedirs("parsed_data", exist_ok=True)
-    final_df.to_csv(f"parsed_data/downdetector_{datetime.now().date()}.csv", index=False)
-    print("✅ Данные успешно сохранены.")
-else:
-    print("❌ Нет данных для сохранения.")
+# Пример использования
+df = parse_downdetector_service("Сбербанк")
+if df is not None:
+    print(df.head())
+    df.to_csv("sberbank_reports.csv", index=False)
