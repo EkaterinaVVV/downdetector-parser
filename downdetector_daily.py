@@ -27,6 +27,8 @@ services = {
     "megafon": "Мегафон"
 }
 
+from selenium.webdriver.chrome.service import Service
+
 def setup_driver():
     options = Options()
     options.add_argument("--headless")
@@ -36,8 +38,9 @@ def setup_driver():
     options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/127.0.0.0 Safari/537.36")
     options.binary_location = "/usr/bin/chromium"
 
-    # Используем системный chromedriver
-    return webdriver.Chrome(executable_path="/usr/bin/chromedriver", options=options)
+    service = Service("/usr/bin/chromedriver")
+    return webdriver.Chrome(service=service, options=options)
+
 
 def parse_service_data(driver, slug, name):
     url = f"https://downdetector.info/{slug}"
