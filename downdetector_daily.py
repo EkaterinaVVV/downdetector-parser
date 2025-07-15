@@ -76,7 +76,7 @@ def parse_service_data(driver, slug, name):
     return data
 
 def main():
-    output_path = "all_services_complaints.csv"
+    output_path =  "/data/all_services_complaints.csv"
     driver = setup_driver()
     all_data = []
 
