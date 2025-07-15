@@ -76,7 +76,7 @@ def parse_service_data(driver, slug, name):
     return data
 
 def main():
-    output_path =  "/data/all_services_complaints.csv"
+    output_path = "/data/all_services_complaints.csv"
     driver = setup_driver()
     all_data = []
 
@@ -90,41 +90,18 @@ def main():
     driver.quit()
 
     df_new = pd.DataFrame(all_data)
-
-    # if os.path.exists(output_path):
-    #     df_old = pd.read_csv(output_path)
-    #     df_combined = pd.concat([df_old, df_new], ignore_index=True)
-    # else:
-    #     df_combined = df_new
-    # df_combined.to_csv(output_path, mode='a', index=False, header=not os.path.exists(output_path))
-    # # df_combined.to_csv(output_path, index=False)
-    # Проверим, существует ли файл
     file_exists = os.path.exists(output_path)
-
-    # Сохраняем новые данные построчно, без объединения с прошлым содержимым
     df_new.to_csv(output_path, mode='a', index=False, header=not file_exists)
-    
-
     print(f"✅ Данные сохранены в {output_path}")
 
-if __name__ == "__main__":
-    main()
-
-import requests
-
-def send_to_telegram(file_path):
-    token = "7864800124:AAHGjG_B5d9w7QX8Awz-UqfyA1ctPuUZRXg"  # вставь сюда свой токен
+    # Отправка файла в Telegram
+    import requests
+    token = os.environ["TELEGRAM_TOKEN"]
     chat_id = 1824545173
     url = f"https://api.telegram.org/bot{token}/sendDocument"
-
-    with open(file_path, "rb") as f:
+    with open(output_path, "rb") as f:
         response = requests.post(url, data={"chat_id": chat_id}, files={"document": f})
-
     if response.status_code == 200:
         print("📤 Файл успешно отправлен в Telegram!")
     else:
         print("⚠️ Ошибка при отправке:", response.text)
-
-# Вызови функцию после сохранения файла
-send_to_telegram(output_path)
-
