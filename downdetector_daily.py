@@ -103,9 +103,25 @@ def main():
 
     # Сохраняем новые данные построчно, без объединения с прошлым содержимым
     df_new.to_csv(output_path, mode='a', index=False, header=not file_exists)
-
+    
 
     print(f"✅ Данные сохранены в {output_path}")
 
 if __name__ == "__main__":
     main()
+
+import requests
+
+def send_file_via_telegram(token, chat_id, file_path):
+    with open(file_path, 'rb') as f:
+        requests.post(
+            f'https://api.telegram.org/bot{token}/sendDocument',
+            data={'chat_id': chat_id},
+            files={'document': f}
+        )
+
+# Отправка файла после сохранения
+TELEGRAM_TOKEN = '7864800124:AAHGjG_B5d9w7QX8Awz-UqfyA1ctPuUZRXg'
+CHAT_ID = '1824545173'
+send_file_via_telegram(TELEGRAM_TOKEN, CHAT_ID, output_path)
+
