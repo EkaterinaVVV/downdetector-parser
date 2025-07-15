@@ -2,6 +2,7 @@ import os
 import time
 import pytz
 import pandas as pd
+import requests
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -26,8 +27,6 @@ services = {
     "megafon": "Мегафон"
 }
 
-from selenium.webdriver.chrome.service import Service
-
 def setup_driver():
     options = Options()
     options.add_argument("--headless")
@@ -39,7 +38,6 @@ def setup_driver():
 
     service = Service("/usr/bin/chromedriver")
     return webdriver.Chrome(service=service, options=options)
-
 
 def parse_service_data(driver, slug, name):
     url = f"https://downdetector.info/{slug}"
@@ -75,6 +73,24 @@ def parse_service_data(driver, slug, name):
             })
     return data
 
+def send_to_telegram(file_path):
+    print("📨 Вход в функцию send_to_telegram...")
+
+    try:
+        token = os.environ["TELEGRAM_TOKEN"]
+        chat_id = 1824545173
+        url = f"https://api.telegram.org/bot{token}/sendDocument"
+
+        with open(file_path, "rb") as f:
+            response = requests.post(url, data={"chat_id": chat_id}, files={"document": f})
+
+        if response.status_code == 200:
+            print("📤 Файл успешно отправлен в Telegram!")
+        else:
+            print("⚠️ Ошибка при отправке:", response.status_code, response.text)
+    except Exception as e:
+        print("⚠️ Исключение в send_to_telegram:", str(e))
+
 def main():
     output_path = "/data/all_services_complaints.csv"
     driver = setup_driver()
@@ -94,29 +110,7 @@ def main():
     df_new.to_csv(output_path, mode='a', index=False, header=not file_exists)
     print(f"✅ Данные сохранены в {output_path}")
 
-    # Отправка файла в Telegram
-    send_to_telegram(output_path)  # ⬅️ добавь ВНУТРЬ main()
-import requests
-
-def send_to_telegram(file_path):
-    print("📨 Вход в функцию send_to_telegram...")
-
-    try:
-        token = os.environ["TELEGRAM_TOKEN"]
-        chat_id = 1824545173
-        url = f"https://api.telegram.org/bot{token}/sendDocument"
-
-        with open(file_path, "rb") as f:
-            response = requests.post(url, data={"chat_id": chat_id}, files={"document": f})
-
-        if response.status_code == 200:
-            print("📤 Файл успешно отправлен в Telegram!")
-        else:
-            print("⚠️ Ошибка при отправке:", response.status_code, response.text)
-    except Exception as e:
-        print("⚠️ Исключение в send_to_telegram:", str(e))
-
+    send_to_telegram(output_path)
 
 if __name__ == "__main__":
     main()
-
