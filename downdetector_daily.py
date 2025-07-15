@@ -77,7 +77,7 @@ def send_to_telegram(file_path):
     print("📨 Вход в функцию send_to_telegram...")
 
     try:
-        token = os.environ["TELEGRAM_TOKEN"]
+        token = os.environ["7864800124:AAHGjG_B5d9w7QX8Awz-UqfyA1ctPuUZRXg"]
         chat_id = 1824545173
         url = f"https://api.telegram.org/bot{token}/sendDocument"
 
