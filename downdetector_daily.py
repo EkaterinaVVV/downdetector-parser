@@ -112,16 +112,19 @@ if __name__ == "__main__":
 
 import requests
 
-def send_file_via_telegram(token, chat_id, file_path):
-    with open(file_path, 'rb') as f:
-        requests.post(
-            f'https://api.telegram.org/bot{token}/sendDocument',
-            data={'chat_id': chat_id},
-            files={'document': f}
-        )
+def send_to_telegram(file_path):
+    token = "7864800124:AAHGjG_B5d9w7QX8Awz-UqfyA1ctPuUZRXg"  # вставь сюда свой токен
+    chat_id = 1824545173
+    url = f"https://api.telegram.org/bot{token}/sendDocument"
 
-# Отправка файла после сохранения
-TELEGRAM_TOKEN = '7864800124:AAHGjG_B5d9w7QX8Awz-UqfyA1ctPuUZRXg'
-CHAT_ID = '1824545173'
-send_file_via_telegram(TELEGRAM_TOKEN, CHAT_ID, output_path)
+    with open(file_path, "rb") as f:
+        response = requests.post(url, data={"chat_id": chat_id}, files={"document": f})
+
+    if response.status_code == 200:
+        print("📤 Файл успешно отправлен в Telegram!")
+    else:
+        print("⚠️ Ошибка при отправке:", response.text)
+
+# Вызови функцию после сохранения файла
+send_to_telegram(output_path)
 
