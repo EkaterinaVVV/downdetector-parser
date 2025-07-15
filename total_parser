@@ -1,0 +1,78 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+import time
+import pytz
+from datetime import datetime
+import pandas as pd
+import csv
+
+# Настройки Chrome
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument("--window-size=1920,1080")
+chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/127.0.0.0 Safari/537.36")
+
+# Запуск WebDriver
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+
+try:
+    driver.get("https://downdetector.info/sberbank")
+
+    # Ждём появления canvas и рендеринга
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "canvas")))
+    time.sleep(2)
+
+    # Получаем данные из Chart.js
+    script = """
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+        const chart = Chart.getChart(canvas);
+        if (chart) {
+            return {
+                labels: chart.data.labels,
+                datasets: chart.data.datasets.map(ds => ({
+                    label: ds.label,
+                    data: ds.data
+                }))
+            };
+        }
+    }
+    return null;
+    """
+    chart_data = driver.execute_script(script)
+
+    if chart_data:
+        data = []
+        tz = pytz.timezone('Europe/Moscow')
+
+        for complaints_point, network_point in zip(chart_data["datasets"][0]["data"], chart_data["datasets"][1]["data"]):
+            if complaints_point["x"] != network_point["x"]:
+                continue
+            timestamp_ms = complaints_point["x"]
+            dt_utc = datetime.fromtimestamp(timestamp_ms / 1000, tz=pytz.UTC)
+            dt_local = dt_utc.astimezone(tz)
+            time_str = dt_local.strftime('%Y-%m-%d %H:%M:%S')
+
+            data.append({
+                "Дата": time_str,
+                "Сервис": "Сбербанк",
+                "Жалобы в час": complaints_point["y"]
+            })
+
+        df = pd.DataFrame(data)
+        df.to_csv("sberbank_complaints.csv", index=False, sep=',', quoting=csv.QUOTE_MINIMAL)
+        print("✅ Парсинг завершён, данные сохранены в sberbank_complaints.csv")
+        print(df.head())
+
+    else:
+        print("⚠️ Не удалось получить данные с графика.")
+
+finally:
+    driver.quit()
