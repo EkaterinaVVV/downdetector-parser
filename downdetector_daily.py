@@ -34,7 +34,10 @@ def setup_driver():
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/127.0.0.0 Safari/537.36")
-    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    options.binary_location = "/usr/bin/chromium"
+
+    # Используем системный chromedriver
+    return webdriver.Chrome(executable_path="/usr/bin/chromedriver", options=options)
 
 def parse_service_data(driver, slug, name):
     url = f"https://downdetector.info/{slug}"
