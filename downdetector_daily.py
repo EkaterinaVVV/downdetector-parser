@@ -92,7 +92,7 @@ def send_to_telegram(file_path):
         print("⚠️ Исключение в send_to_telegram:", str(e))
 
 def main():
-    output_path = "/data/all_services_complaints.csv"
+    output_path = "all_services_complaints1.csv"
     driver = setup_driver()
     all_data = []
 
