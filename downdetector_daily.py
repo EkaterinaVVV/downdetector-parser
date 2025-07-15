@@ -95,13 +95,8 @@ def main():
     print(f"✅ Данные сохранены в {output_path}")
 
     # Отправка файла в Telegram
-    import requests
-    token = os.environ["TELEGRAM_TOKEN"]
-    chat_id = 1824545173
-    url = f"https://api.telegram.org/bot{token}/sendDocument"
-    with open(output_path, "rb") as f:
-        response = requests.post(url, data={"chat_id": chat_id}, files={"document": f})
-    if response.status_code == 200:
-        print("📤 Файл успешно отправлен в Telegram!")
-    else:
-        print("⚠️ Ошибка при отправке:", response.text)
+    send_to_telegram(output_path)  # ⬅️ добавь ВНУТРЬ main()
+
+if __name__ == "__main__":
+    main()
+
