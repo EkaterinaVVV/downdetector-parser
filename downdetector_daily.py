@@ -91,13 +91,20 @@ def main():
 
     df_new = pd.DataFrame(all_data)
 
-    if os.path.exists(output_path):
-        df_old = pd.read_csv(output_path)
-        df_combined = pd.concat([df_old, df_new], ignore_index=True)
-    else:
-        df_combined = df_new
+    # if os.path.exists(output_path):
+    #     df_old = pd.read_csv(output_path)
+    #     df_combined = pd.concat([df_old, df_new], ignore_index=True)
+    # else:
+    #     df_combined = df_new
+    # df_combined.to_csv(output_path, mode='a', index=False, header=not os.path.exists(output_path))
+    # # df_combined.to_csv(output_path, index=False)
+    # Проверим, существует ли файл
+    file_exists = os.path.exists(output_path)
 
-    df_combined.to_csv(output_path, index=False)
+    # Сохраняем новые данные построчно, без объединения с прошлым содержимым
+    df_new.to_csv(output_path, mode='a', index=False, header=not file_exists)
+
+
     print(f"✅ Данные сохранены в {output_path}")
 
 if __name__ == "__main__":
