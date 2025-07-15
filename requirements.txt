@@ -1,3 +1,4 @@
 selenium==4.21.0
 pandas
 pytz
+requests
