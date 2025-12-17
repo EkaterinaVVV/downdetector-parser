@@ -7,7 +7,7 @@ import pandas as pd
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from bs4 import BeautifulSoup
-
+import requests
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
@@ -297,4 +297,45 @@ with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
     if not df_messages.empty:
         df_messages.to_excel(writer, sheet_name="user_messages", index=False)
 
+
 print(f"\nExcel-файл обновлён: {excel_path}")
+
+TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")   # токен бота
+TG_CHAT_ID = os.getenv("TG_CHAT_ID")       # твой chat_id (или id канала)
+
+def tg_send_message(text: str):
+    if not TG_BOT_TOKEN or not TG_CHAT_ID:
+        print("TG_BOT_TOKEN / TG_CHAT_ID не заданы, пропускаю отправку в Telegram.")
+        return
+
+    url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage"
+    resp = requests.post(url, data={"chat_id": TG_CHAT_ID, "text": text}, timeout=60)
+    resp.raise_for_status()
+
+def tg_send_file(file_path: str, caption: str = ""):
+    if not TG_BOT_TOKEN or not TG_CHAT_ID:
+        print("TG_BOT_TOKEN / TG_CHAT_ID не заданы, пропускаю отправку файла в Telegram.")
+        return
+
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Файл не найден: {file_path}")
+
+    url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendDocument"
+    with open(file_path, "rb") as f:
+        files = {"document": (os.path.basename(file_path), f)}
+        data = {"chat_id": TG_CHAT_ID, "caption": caption}
+        resp = requests.post(url, data=data, files=files, timeout=300)
+    resp.raise_for_status()
+
+# ---- ВЫЗОВ ПОСЛЕ СОЗДАНИЯ EXCEL ----
+try:
+    caption = f"✅ DownDetector: файл обновлён {RUN_DATE}"
+    tg_send_file(excel_path, caption=caption)
+    tg_send_message("✅ Парсинг завершён без ошибок, файл отправила.")
+except Exception as e:
+    # если упало на отправке — хотя бы сообщим
+    try:
+        tg_send_message(f"❌ Ошибка при отправке файла: {e}")
+    except Exception:
+        pass
+    raise
