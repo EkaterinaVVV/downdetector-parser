@@ -300,7 +300,7 @@ with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
 
 print(f"\nExcel-файл обновлён: {excel_path}")
 
-TG_BOT_TOKEN = token = os.environ["TELEGRAM_TOKEN"]
+TG_BOT_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TG_CHAT_ID = 1824545173
 
 def tg_send_message(text: str):
@@ -339,5 +339,6 @@ except Exception as e:
     except Exception:
         pass
     raise
+
 
 
