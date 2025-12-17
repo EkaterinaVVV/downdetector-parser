@@ -1,11 +1,10 @@
 FROM python:3.10-slim
 
 # Установка зависимостей ОС
-RUN apt-get update && apt-get install -y \
-    chromium-driver \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
+    chromium-driver \
     fonts-liberation \
-    libappindicator3-1 \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
@@ -21,7 +20,9 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     wget \
     unzip \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
 
 # Установка зависимостей Python
 COPY requirements.txt .
