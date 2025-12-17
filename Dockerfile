@@ -23,6 +23,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     ca-certificates \
  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    firefox-esr \
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
 
 # Установка зависимостей Python
