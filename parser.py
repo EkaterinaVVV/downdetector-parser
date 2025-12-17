@@ -279,28 +279,27 @@ finally:
     driver.quit()
 
 # ===================== EXCEL AGGREGATION =====================
+import gc
 
 excel_path = os.path.join(BASE_DIR, "all_parsed_data.xlsx")
 
-def safe_read_csv(path):
-    if os.path.exists(path):
-        return pd.read_csv(path, sep=";", encoding="utf-8-sig")
-    return pd.DataFrame()
-
-df_graph = safe_read_csv(CSV_FILES["graph"])
-df_cloud = safe_read_csv(CSV_FILES["cloud"])
-df_hist = safe_read_csv(CSV_FILES["hist"])
-df_messages = safe_read_csv(CSV_FILES["messages"])
+def write_csv_to_excel_in_chunks(writer, csv_path, sheet_name, chunksize=50000):
+    if not os.path.exists(csv_path):
+        return
+    startrow = 0
+    header = True
+    for chunk in pd.read_csv(csv_path, sep=";", encoding="utf-8-sig", chunksize=chunksize):
+        chunk.to_excel(writer, sheet_name=sheet_name, index=False, header=header, startrow=startrow)
+        startrow += len(chunk) + (1 if header else 0)
+        header = False
+        del chunk
+        gc.collect()
 
 with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
-    if not df_graph.empty:
-        df_graph.to_excel(writer, sheet_name="graph_data", index=False)
-    if not df_cloud.empty:
-        df_cloud.to_excel(writer, sheet_name="cloud_tags", index=False)
-    if not df_hist.empty:
-        df_hist.to_excel(writer, sheet_name="histograms", index=False)
-    if not df_messages.empty:
-        df_messages.to_excel(writer, sheet_name="user_messages", index=False)
+    write_csv_to_excel_in_chunks(writer, CSV_FILES["graph"], "graph_data")
+    write_csv_to_excel_in_chunks(writer, CSV_FILES["cloud"], "cloud_tags")
+    write_csv_to_excel_in_chunks(writer, CSV_FILES["hist"], "histograms")
+    write_csv_to_excel_in_chunks(writer, CSV_FILES["messages"], "user_messages")
 
 
 print(f"\nExcel-файл обновлён: {excel_path}")
@@ -348,6 +347,7 @@ except Exception as e:
     except Exception:
         pass
     raise
+
 
 
 
