@@ -25,7 +25,7 @@ options.add_argument("--window-size=1920,1080")
 driver = webdriver.Chrome(options=options)
 # ===================== НАСТРОЙКИ =====================
 
-SERVICES = ["mts", "tele2", "telegram", "roblox", "whatsapp"]
+SERVICES = ["mts", "tele2", "telegram", "sberbank", "tinkoff", "bank-vtb", "vkontakte", "snapchat", "facebook", "bilajn", "rostelekom", "ozon", "wildberries"]
 DAYS_BACK = 0
 
 BASE_DIR = "parsed_data"
@@ -348,6 +348,7 @@ except Exception as e:
     except Exception:
         pass
     raise
+
 
 
 
