@@ -23,7 +23,7 @@ from webdriver_manager.firefox import GeckoDriverManager
 SERVICES = ["mts", "tele2", "telegram", "roblox", "whatsapp"]
 DAYS_BACK = 0
 
-BASE_DIR = r"C:\Users\Ekaterina\Downloads\Диплом\Парсинг данных\Данные"
+BASE_DIR = "parsed_data"
 os.makedirs(BASE_DIR, exist_ok=True)
 
 CSV_FILES = {
@@ -339,6 +339,7 @@ except Exception as e:
     except Exception:
         pass
     raise
+
 
 
 
