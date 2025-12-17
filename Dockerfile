@@ -28,7 +28,7 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Копирование скрипта
-COPY downdetector_daily.py .
+COPY parser.py .
 
 # Запуск скрипта
-CMD ["python", "downdetector_daily.py"]
+CMD ["python", "parser.py"]
