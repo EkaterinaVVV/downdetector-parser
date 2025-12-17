@@ -22,4 +22,3 @@ requests>=2.31.0
 
 # Логирование и прогресс
 tqdm>=4.66.0
-FROM python:3.11-slim-bookworm
