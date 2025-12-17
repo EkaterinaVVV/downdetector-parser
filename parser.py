@@ -9,15 +9,20 @@ from dateutil.relativedelta import relativedelta
 from bs4 import BeautifulSoup
 import requests
 from selenium import webdriver
-from selenium.webdriver.firefox.service import Service
-from selenium.webdriver.firefox.options import Options
+# from selenium.webdriver.firefox.service import Service
+# from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
+# from webdriver_manager.firefox import GeckoDriverManager
+options = Options()
+options.add_argument("--headless=new")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--window-size=1920,1080")
 
-from webdriver_manager.firefox import GeckoDriverManager
-
-
+driver = webdriver.Chrome(options=options)
 # ===================== НАСТРОЙКИ =====================
 
 SERVICES = ["mts", "tele2", "telegram", "roblox", "whatsapp"]
@@ -44,14 +49,14 @@ START_DATE = NOW.date() - relativedelta(days=DAYS_BACK)
 
 # ===================== BROWSER =====================
 
-options = Options()
-options.add_argument("--headless")
-options.add_argument("--window-size=1920,1080")
+# options = Options()
+# options.add_argument("--headless")
+# options.add_argument("--window-size=1920,1080")
 
-driver = webdriver.Firefox(
-    service=Service(GeckoDriverManager().install()),
-    options=options
-)
+# driver = webdriver.Firefox(
+#     service=Service(GeckoDriverManager().install()),
+#     options=options
+# )
 
 wait = WebDriverWait(driver, 30)
 
@@ -301,10 +306,11 @@ with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
 print(f"\nExcel-файл обновлён: {excel_path}")
 
 TG_BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
-TG_CHAT_ID = int(os.getenv("TG_CHAT_ID"))
-
-if not TG_BOT_TOKEN or not TG_CHAT_ID:
+TG_CHAT_ID_RAW = os.getenv("TG_CHAT_ID")
+if not TG_BOT_TOKEN or not TG_CHAT_ID_RAW:
     raise RuntimeError("Telegram credentials not set")
+TG_CHAT_ID = int(TG_CHAT_ID_RAW)
+
 
 def tg_send_message(text: str):
     if not TG_BOT_TOKEN or not TG_CHAT_ID:
@@ -342,6 +348,7 @@ except Exception as e:
     except Exception:
         pass
     raise
+
 
 
 
